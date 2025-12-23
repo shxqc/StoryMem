@@ -110,6 +110,10 @@ In total, *ST-Bench* provides 300 detailed video prompts describing characters, 
 
 To create your own story script, you can follow the system prompt below, which we use to generate structured, shot-level story scripts:
 
+<details>
+<summary><b>System prompt for story script (click to expand)</b></summary>
+
+
 > You are an expert director of story videos. Your task is to design a story script about [..., e.g. a funny man].
 > 
 > Each prompt corresponds to a five-second video clip, so avoid overly complex text rendering, extreme motions, or audio-dependent effects. The overall story should remain simple, clear, and easy to follow.
@@ -140,6 +144,10 @@ To create your own story script, you can follow the system prompt below, which w
 >
 > Return only a valid JSON story script.
 
+</details>
+
+To improve consistency, it would be better to provide
+more explicit character descriptions in each shot prompt, helping the model match the intended memory.
 
 ## ❤️ Ackowledgement
 Our implementation is based on [Wan2.2](https://github.com/Wan-Video/Wan2.2/tree/main). Thanks for the great open-source work!
