@@ -87,6 +87,14 @@ def _parse_args():
         "--t2v_first_shot", action="store_true", help="Use T2V model for first shot"
     )
     parser.add_argument(
+        "--i2v_api_first_shot",
+        action="store_true",
+        help="Use I2V API for first shot (requires --i2v_image)",
+    )
+    parser.add_argument(
+        "--i2v_image", type=str, default=None, help="Input image path for I2V"
+    )
+    parser.add_argument(
         "--m2v_first_shot",
         action="store_true",
         help="Use M2V model for first shot (requires image)",
@@ -130,7 +138,14 @@ def _init_logging(rank, log_file):
         )
 
 
-def generate_first_shot_api(prompt: str, output_path: str, size: str, **kwargs):
+def generate_first_shot_api(
+    prompt: str,
+    output_path: str,
+    size: str,
+    mode: str = "t2v",
+    image_path: str = None,
+    **kwargs,
+):
     """
     使用 API 生成第一个镜头
 
@@ -138,17 +153,23 @@ def generate_first_shot_api(prompt: str, output_path: str, size: str, **kwargs):
         prompt: 文本描述
         output_path: 输出路径
         size: 分辨率 (如 "832*480")
+        mode: 生成模式 ("t2v" 或 "i2v")
+        image_path: 输入图像路径 (i2v 模式需要)
     """
-    logging.info(f"Generating first shot with API: {prompt[:50]}...")
+    logging.info(f"Generating first shot with API ({mode}): {prompt[:50]}...")
 
-    # 尝试使用 API 生成
+    image = None
+    if mode == "i2v" and image_path:
+        image = Image.open(image_path)
+
+    # 使用 API 生成
     video_path = generate_video(
         prompt=prompt,
-        mode="t2v",
+        mode=mode,
+        image=image,
         size=size,
         provider=kwargs.get("api_provider", "wan"),
         save_path=output_path,
-        api_key=kwargs.get("api_key"),
     )
 
     logging.info(f"API video saved to: {video_path}")
@@ -250,14 +271,30 @@ def main(args):
             dist.destroy_process_group()
         return
 
-    elif args.use_api and rank == 0:
-        # API 模式
+    elif args.i2v_api_first_shot and rank == 0:
+        # API I2V 模式
+        if not args.i2v_image:
+            raise ValueError("--i2v_api_first_shot requires --i2v_image")
         generate_first_shot_api(
             prompt=first_prompt,
             output_path=first_shot_output,
             size=args.size,
+            mode="i2v",
+            image_path=args.i2v_image,
             api_provider=args.api_provider,
-            api_key=args.api_key,
+        )
+        if world_size > 1:
+            dist.barrier()
+            dist.destroy_process_group()
+
+    elif args.use_api and rank == 0:
+        # API T2V 模式
+        generate_first_shot_api(
+            prompt=first_prompt,
+            output_path=first_shot_output,
+            size=args.size,
+            mode="t2v",
+            api_provider=args.api_provider,
         )
         if world_size > 1:
             dist.barrier()

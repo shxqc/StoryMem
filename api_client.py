@@ -9,6 +9,8 @@ from io import BytesIO
 import requests
 from PIL import Image
 
+
+
 class BaseVideoAPI(ABC):
     """视频生成 API 基类"""
 
@@ -301,7 +303,5 @@ if __name__ == "__main__":
 
     video_path = generate_video(
         args.prompt, mode=args.mode, image=image, size=args.size, save_path=args.save
-        size=args.size,
-        save_path=args.save
     )
     print(f"Video saved to: {video_path}")
